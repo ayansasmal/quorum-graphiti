@@ -801,7 +801,7 @@ async def test_extract_edges_drops_normalized_self_edge_names(caplog):
         valid_at=datetime.now(timezone.utc),
     )
 
-    with caplog.at_level('INFO'):
+    with caplog.at_level('DEBUG'):
         edges = await extract_edges(
             clients,
             episode,
@@ -812,7 +812,12 @@ async def test_extract_edges_drops_normalized_self_edge_names(caplog):
         )
 
     assert edges == []
-    assert 'Dropping self-edge for normalized entity name alice' in caplog.messages
+    self_edge_records = [
+        record for record in caplog.records if record.message == 'Dropping normalized self-edge'
+    ]
+    assert len(self_edge_records) == 1
+    assert self_edge_records[0].levelname == 'DEBUG'
+    assert 'alice' not in self_edge_records[0].message.lower()
 
 
 @pytest.mark.asyncio

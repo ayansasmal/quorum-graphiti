@@ -234,10 +234,7 @@ async def extract_edges(
             continue
 
         if source_normalized == target_normalized:
-            logger.info(
-                'Dropping self-edge for normalized entity name %s',
-                source_normalized,
-            )
+            logger.debug('Dropping normalized self-edge')
             continue
 
         source_node = normalized_name_to_node.get(source_normalized)
