@@ -290,9 +290,9 @@ G) Direct speaker-to-target edges (no fragmenting through scenery)
 {context['entity_types']}
 </ENTITY TYPES>
 {_build_edge_types_section(context.get('edge_types'))}
-<PREVIOUS MESSAGES>
+<PREVIOUS_MESSAGES>
 {to_prompt_json([ep for ep in context['previous_episodes']])}
-</PREVIOUS MESSAGES>
+</PREVIOUS_MESSAGES>
 
 <CURRENT MESSAGES>
 {context['episode_content']}

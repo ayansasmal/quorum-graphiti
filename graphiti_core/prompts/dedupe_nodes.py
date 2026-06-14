@@ -60,9 +60,9 @@ def node(context: dict[str, Any]) -> list[Message]:
         Message(
             role='user',
             content=f"""
-<PREVIOUS MESSAGES>
+<PREVIOUS_MESSAGES>
 {to_prompt_json(context['previous_episodes'])}
-</PREVIOUS MESSAGES>
+</PREVIOUS_MESSAGES>
 
 <CURRENT MESSAGE>
 {context['episode_content']}
@@ -124,9 +124,9 @@ def nodes(context: dict[str, Any]) -> list[Message]:
         Message(
             role='user',
             content=f"""
-<PREVIOUS MESSAGES>
+<PREVIOUS_MESSAGES>
 {to_prompt_json(context['previous_episodes'])}
-</PREVIOUS MESSAGES>
+</PREVIOUS_MESSAGES>
 
 <CURRENT MESSAGE>
 {context['episode_content']}

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from graphiti_core.prompts.dedupe_edges import resolve_edge
@@ -13,9 +15,27 @@ CANONICAL_ATTRIBUTION_BLOCK = (
     'Do not carry over facts about co-mentioned entities, even when they are topically related.'
 )
 
+PRODUCTION_EXTRACTION_PROMPT_MODULES = (
+    'graphiti_core/prompts/extract_nodes_and_edges.py',
+    'graphiti_core/prompts/extract_nodes.py',
+    'graphiti_core/prompts/dedupe_nodes.py',
+    'graphiti_core/prompts/extract_edges.py',
+)
+
 
 def _content(messages: list) -> str:
     return '\n'.join(message.content for message in messages)
+
+
+@pytest.mark.parametrize('module_path', PRODUCTION_EXTRACTION_PROMPT_MODULES)
+def test_production_extraction_prompts_use_underscore_previous_message_tags(
+    module_path: str,
+) -> None:
+    repository_root = Path(__file__).resolve().parents[2]
+    source = (repository_root / module_path).read_text()
+
+    assert '<PREVIOUS MESSAGES>' not in source
+    assert '</PREVIOUS MESSAGES>' not in source
 
 
 def test_resolve_edge_requires_conservative_fact_contradictions() -> None:

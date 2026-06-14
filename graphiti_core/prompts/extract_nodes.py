@@ -119,9 +119,9 @@ reference entities. Only extract distinct entities from the CURRENT MESSAGE.
 {context['entity_types']}
 </ENTITY TYPES>
 
-<PREVIOUS MESSAGES>
+<PREVIOUS_MESSAGES>
 {to_prompt_json([ep for ep in context['previous_episodes']])}
-</PREVIOUS MESSAGES>
+</PREVIOUS_MESSAGES>
 
 <CURRENT MESSAGE>
 {context['episode_content']}
@@ -351,9 +351,9 @@ def classify_nodes(context: dict[str, Any]) -> list[Message]:
     )
 
     user_prompt = f"""
-<PREVIOUS MESSAGES>
+<PREVIOUS_MESSAGES>
 {to_prompt_json([ep for ep in context['previous_episodes']])}
-</PREVIOUS MESSAGES>
+</PREVIOUS_MESSAGES>
 
 <CURRENT MESSAGE>
 {context['episode_content']}
