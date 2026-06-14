@@ -2,6 +2,23 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Quorum Fork Overlay
+
+This repository is the Quorum-maintained fork of `getzep/graphiti`. Quorum-specific
+`graphiti-core` prompt fixes, extraction guards, regression tests, and the Graphiti MCP
+container belong here, not in the Quorum gateway.
+
+- Preserve upstream compatibility where practical and keep patches suitable for upstreaming.
+- Add a failing regression test before changing prompt or extraction behavior.
+- Build the MCP container against this checkout's local `graphiti_core`; never replace it with
+  a floating PyPI `graphiti-core>=...` dependency.
+- Publish immutable multi-platform images as
+  `ghcr.io/ayansasmal/graphiti-mcp:sha-<commit>`.
+- Publishing does not deploy automatically. Quorum production must explicitly pin the verified
+  image tag in `quorum/crossplane/environments/prod.yaml`.
+- Do not suppress Quorum audit episodes. Guard invalid relationship extraction while preserving
+  episode ingestion and lineage.
+
 ## Project Overview
 
 Graphiti is a Python framework for building temporally-aware knowledge graphs designed for AI agents. It enables real-time incremental updates to knowledge graphs without batch recomputation, making it suitable for dynamic environments.

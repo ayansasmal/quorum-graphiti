@@ -1,5 +1,22 @@
 # Repository Guidelines
 
+## Quorum Fork Overlay
+
+This repository is the Quorum-maintained fork of `getzep/graphiti`. Quorum-specific
+`graphiti-core` prompt fixes, extraction guards, regression tests, and the Graphiti MCP
+container belong here, not in the Quorum gateway.
+
+- Preserve upstream compatibility where practical and keep patches suitable for upstreaming.
+- Add a failing regression test before changing prompt or extraction behavior.
+- Build the MCP container against this checkout's local `graphiti_core`; never replace it with
+  a floating PyPI `graphiti-core>=...` dependency.
+- Publish immutable multi-platform images as
+  `ghcr.io/ayansasmal/graphiti-mcp:sha-<commit>`.
+- Publishing does not deploy automatically. Quorum production must explicitly pin the verified
+  image tag in `quorum/crossplane/environments/prod.yaml`.
+- Do not suppress Quorum audit episodes. Guard invalid relationship extraction while preserving
+  episode ingestion and lineage.
+
 ## Project Structure & Module Organization
 Graphiti's core library lives under `graphiti_core/`, split into domain modules such as `nodes.py`, `edges.py`, `models/`, and `search/` for retrieval pipelines. Database drivers in `graphiti_core/driver/` support Neo4j, FalkorDB, and Neptune (plus a deprecated Kuzu driver). Additional core modules include `cross_encoder/` (reranking via BGE, OpenAI, and Gemini), `telemetry/` (OpenTelemetry tracing), `namespaces/` (namespace management), and `migrations/` (database migrations). Service adapters and API glue reside in `server/graph_service/`, while the MCP integration lives in `mcp_server/` (with its own `src/`, `tests/`, `config/`, and `docker/` subdirectories). Shared assets sit in `images/` and `examples/`. Tests cover the core package via `tests/`, with configuration in `conftest.py`, `pytest.ini`, and Docker compose files for optional services. Specifications live in `spec/` and type signatures in `signatures/`. Tooling manifests live at the repo root, including `pyproject.toml`, `Makefile`, and deployment compose files.
 
