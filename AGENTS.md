@@ -34,6 +34,21 @@ container belong here, not in the Quorum gateway.
   `<PREVIOUS MESSAGES>` form remains only in the offline evaluation module and must not be
   reintroduced into extraction or deduplication prompts.
 
+### Quorum Fork MCP Image
+
+Build from the repository root with the immutable commit-derived tag:
+
+```bash
+docker build -f mcp_server/docker/Dockerfile.quorum \
+  --build-arg VCS_REF=$(git rev-parse HEAD) \
+  -t ghcr.io/ayansasmal/graphiti-mcp:sha-$(git rev-parse HEAD) .
+```
+
+`Dockerfile.quorum` installs this checkout's local `graphiti_core` source before installing the MCP
+server with its `providers` and `azure` extras. Production must use only immutable `sha-<commit>`
+tags and explicitly pin the verified tag; never rewrite the image to use a floating PyPI Graphiti
+release. Quorum audit episodes are provenance and must not be filtered or suppressed.
+
 ## Project Structure & Module Organization
 Graphiti's core library lives under `graphiti_core/`, split into domain modules such as `nodes.py`, `edges.py`, `models/`, and `search/` for retrieval pipelines. Database drivers in `graphiti_core/driver/` support Neo4j, FalkorDB, and Neptune (plus a deprecated Kuzu driver). Additional core modules include `cross_encoder/` (reranking via BGE, OpenAI, and Gemini), `telemetry/` (OpenTelemetry tracing), `namespaces/` (namespace management), and `migrations/` (database migrations). Service adapters and API glue reside in `server/graph_service/`, while the MCP integration lives in `mcp_server/` (with its own `src/`, `tests/`, `config/`, and `docker/` subdirectories). Shared assets sit in `images/` and `examples/`. Tests cover the core package via `tests/`, with configuration in `conftest.py`, `pytest.ini`, and Docker compose files for optional services. Specifications live in `spec/` and type signatures in `signatures/`. Tooling manifests live at the repo root, including `pyproject.toml`, `Makefile`, and deployment compose files.
 

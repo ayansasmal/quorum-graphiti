@@ -36,6 +36,21 @@ container belong here, not in the Quorum gateway.
   `<PREVIOUS MESSAGES>` form remains only in the offline evaluation module and must not be
   reintroduced into extraction or deduplication prompts.
 
+### Quorum Fork MCP Image
+
+Build from the repository root with the immutable commit-derived tag:
+
+```bash
+docker build -f mcp_server/docker/Dockerfile.quorum \
+  --build-arg VCS_REF=$(git rev-parse HEAD) \
+  -t ghcr.io/ayansasmal/graphiti-mcp:sha-$(git rev-parse HEAD) .
+```
+
+`Dockerfile.quorum` installs this checkout's local `graphiti_core` source before installing the MCP
+server with its `providers` and `azure` extras. Production must use only immutable `sha-<commit>`
+tags and explicitly pin the verified tag; never rewrite the image to use a floating PyPI Graphiti
+release. Quorum audit episodes are provenance and must not be filtered or suppressed.
+
 ## Project Overview
 
 Graphiti is a Python framework for building temporally-aware knowledge graphs designed for AI agents. It enables real-time incremental updates to knowledge graphs without batch recomputation, making it suitable for dynamic environments.

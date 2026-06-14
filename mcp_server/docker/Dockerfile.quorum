@@ -1,0 +1,44 @@
+# syntax=docker/dockerfile:1
+
+FROM python:3.11-slim-bookworm
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV MCP_SERVER_HOST="0.0.0.0" \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /app/graphiti
+
+COPY pyproject.toml uv.lock README.md ./
+COPY graphiti_core ./graphiti_core
+
+RUN python -m pip install --no-cache-dir "/app/graphiti[falkordb]"
+
+WORKDIR /app/mcp
+
+COPY mcp_server/pyproject.toml ./pyproject.toml
+COPY mcp_server/README.md ./README.md
+COPY mcp_server/src ./src
+
+RUN sed -i '/graphiti-core\[falkordb\]/d' pyproject.toml \
+    && python -m pip install --no-cache-dir ".[providers,azure]"
+
+COPY mcp_server/main.py ./main.py
+COPY mcp_server/config ./config
+
+ARG VCS_REF=unknown
+LABEL org.opencontainers.image.title="Quorum Graphiti MCP Server" \
+      org.opencontainers.image.description="Graphiti MCP server built from the Quorum fork's local graphiti-core source" \
+      org.opencontainers.image.source="https://github.com/ayansasmal/graphiti" \
+      org.opencontainers.image.revision="${VCS_REF}"
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=10s --timeout=5s --start-period=15s --retries=3 \
+    CMD curl --fail --silent --show-error http://localhost:8000/health || exit 1
+
+CMD ["python", "main.py"]

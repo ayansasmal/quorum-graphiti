@@ -329,6 +329,23 @@ Key features of the MCP server include:
 The MCP server can be deployed using Docker with Neo4j, making it easy to integrate Graphiti into your AI assistant
 workflows.
 
+### Quorum Fork MCP Image
+
+Build the Quorum image from the repository root so the container installs this checkout's
+`graphiti_core` source rather than resolving Graphiti from PyPI:
+
+```bash
+docker build -f mcp_server/docker/Dockerfile.quorum \
+  --build-arg VCS_REF=$(git rev-parse HEAD) \
+  -t ghcr.io/ayansasmal/graphiti-mcp:sha-$(git rev-parse HEAD) .
+```
+
+Production may consume only immutable `sha-<commit>` tags. Publishing an image does not deploy it;
+the verified tag must be pinned explicitly in Quorum's production configuration. The image keeps
+the MCP server's `providers` and `azure` extras and streamable HTTP transport while retaining the
+locally installed core. Quorum audit episodes are provenance and must not be filtered or suppressed
+during ingestion.
+
 For detailed setup instructions and usage examples, see the [MCP server README](mcp_server/README.md).
 
 ## REST Service
