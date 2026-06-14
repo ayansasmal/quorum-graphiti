@@ -1,7 +1,7 @@
 # Quorum Graphiti Prompt Hardening Design
 
 **Date:** 2026-06-14  
-**Status:** Proposed  
+**Status:** Accepted — finalized 2026-06-14  
 **Owner:** Quorum platform team
 
 ## Problem
@@ -77,7 +77,9 @@ generic deterministic parser.
 
 ### Edge extraction
 
-Add a deterministic precondition at the Graphiti extraction-call boundary:
+Add a deterministic precondition at the Graphiti extraction-call boundary
+(`graphiti_core/utils/maintenance/edge_operations.py`, before the `extract_edges()` LLM call at the
+`ExtractedEdges` response):
 
 1. Normalize entity names using the same comparison semantics already used by the extraction
    pipeline.
@@ -87,15 +89,18 @@ Add a deterministic precondition at the Graphiti extraction-call boundary:
 Retain and strengthen prompt instructions that source and target must be distinct and facts must
 be supported by the current message.
 
-Add deterministic post-validation that rejects any model-produced edge whose normalized source and
-target names are equal. This protects the graph even when a model ignores the prompt.
+Add deterministic post-validation in the same module, after the LLM response is parsed into
+`ExtractedEdges`, that rejects any model-produced edge whose normalized source and target names are
+equal. This protects the graph even when a model ignores the prompt.
 
 Audit episodes continue through `add_memory`. Only relationship extraction is skipped when a valid
 two-entity relationship cannot exist.
 
 ### Entity summaries
 
-Extend the shared summary instructions and batch-summary prompt with an attribution rule:
+Extend the shared summary instructions (`graphiti_core/prompts/snippets.py`, `summary_instructions`)
+and the batch-summary prompt (`graphiti_core/prompts/summarize_nodes.py`, `summarize_context` and
+`summarize_pair`) with an attribution rule:
 
 - include only facts directly and specifically describing the entity being summarized;
 - do not transfer facts from co-mentioned entities;
@@ -113,13 +118,20 @@ Standardize prompt delimiters on valid underscore names:
 </PREVIOUS_MESSAGES>
 ```
 
-This is prompt consistency rather than an application-parser fix. Tests will prevent either spaced
-variant from being reintroduced in production prompt modules.
+The spaced `<PREVIOUS MESSAGES>` variant currently appears in five prompt modules —
+`extract_nodes_and_edges.py`, `extract_nodes.py`, `dedupe_nodes.py`, `extract_edges.py`, and
+`eval.py` — and `extract_edges.py` carries both variants. The four ingestion-path modules
+(`extract_nodes_and_edges`, `extract_nodes`, `dedupe_nodes`, `extract_edges`) are normalized to the
+underscore form and are the "production prompt modules" the tests assert against;
+`graphiti_core/prompts/eval.py` is an offline evaluation module and is out of scope. This is prompt
+consistency rather than an application-parser fix. Tests will prevent either spaced variant from
+being reintroduced in production prompt modules.
 
 ### Container build
 
-Add a Quorum standalone MCP Dockerfile at the fork root or under `mcp_server/docker/` with repository
-root as its build context. It will:
+Add a Quorum standalone MCP Dockerfile at `mcp_server/docker/Dockerfile.quorum` with the repository
+root as its build context. The root context is required so the build can install the fork's local
+`graphiti_core` source rather than a PyPI release. It will:
 
 1. install the root `graphiti-core` project from local source;
 2. install `mcp_server` against that local package;
