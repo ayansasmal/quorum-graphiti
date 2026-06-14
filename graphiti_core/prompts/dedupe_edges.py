@@ -49,7 +49,8 @@ def resolve_edge(context: dict[str, Any]) -> list[Message]:
             'Only mark a contradiction when facts concern the SAME specific subject or entity '
             'relationship and make logically INCOMPATIBLE claims. '
             'Facts about different subjects are NEVER contradictions. '
-            'When uncertain, return empty lists.',
+            'When uncertain about a contradiction, omit uncertain contradicted idx values and '
+            'return an empty contradicted_facts list if none remain.',
         ),
         Message(
             role='user',
@@ -91,8 +92,8 @@ CONTRADICTION REQUIREMENTS:
 - The facts must make logically INCOMPATIBLE claims that cannot both be true.
 - Topical similarity or presence in FACT INVALIDATION CANDIDATES is not enough.
 - Facts about different subjects are NEVER contradictions.
-- If uncertain whether a fact is contradicted, omit its idx and return empty lists when no
-  confident duplicate or contradiction exists.
+- If uncertain whether a fact is contradicted, omit its idx and return an empty
+  contradicted_facts list if no confident contradictions remain.
 
 <EXAMPLE>
 EXISTING FACT: idx=0, "Alice joined Acme Corp in 2020"
