@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+**Status:** Tasks 1–6 COMPLETE as of 2026-06-15. 42/42 regression tests passing. GHCR publishing workflow live at `.github/workflows/quorum-graphiti-publish.yml`. Tasks 7–9 (pin + production reconvergence) remain in the Quorum repo.
+
 **Goal:** Harden Graphiti's fact invalidation, edge extraction, and entity-summary prompts; publish an immutable Quorum-owned MCP image; and explicitly pin that image in Quorum production.
 
 **Architecture:** Prompt semantics remain in the Quorum Graphiti fork, with deterministic guards around edge extraction so model noncompliance cannot create self-loops. The MCP image installs `graphiti-core` from the same checkout, publishes a multi-platform `sha-<commit>` image to GHCR, and is deployed only after the separate Quorum repository pins that verified tag.

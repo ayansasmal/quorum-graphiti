@@ -331,8 +331,14 @@ workflows.
 
 ### Quorum Fork MCP Image
 
-Build the Quorum image from the repository root so the container installs this checkout's
-`graphiti_core` source rather than resolving Graphiti from PyPI:
+Every push to `main` that touches `graphiti_core/` or `mcp_server/` automatically publishes a
+multi-platform image via `.github/workflows/quorum-graphiti-publish.yml`:
+
+```
+ghcr.io/ayansasmal/graphiti-mcp:sha-<full-commit>
+```
+
+To build manually from the repository root:
 
 ```bash
 docker build -f mcp_server/docker/Dockerfile.quorum \
@@ -345,6 +351,19 @@ the verified tag must be pinned explicitly in Quorum's production configuration.
 the MCP server's `providers` and `azure` extras and streamable HTTP transport while retaining the
 locally installed core. Quorum audit episodes are provenance and must not be filtered or suppressed
 during ingestion.
+
+Verify the local-core contract before pinning a new tag:
+
+```bash
+UV_CACHE_DIR=/tmp/quorum-graphiti-uv-cache DISABLE_FALKORDB=1 DISABLE_KUZU=1 DISABLE_NEPTUNE=1 \
+  uv run --frozen pytest \
+    tests/prompts/test_quorum_prompt_regressions.py \
+    tests/utils/maintenance/test_edge_operations.py \
+    mcp_server/tests/test_quorum_image_contract.py \
+    -q --noconftest
+```
+
+Expected: 42 passed.
 
 For detailed setup instructions and usage examples, see the [MCP server README](mcp_server/README.md).
 
