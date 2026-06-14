@@ -63,6 +63,8 @@ def summarize_pair(context: dict[str, Any]) -> list[Message]:
         Synthesize the information from the following two summaries into a single information-dense summary.
 
         IMPORTANT:
+ATTRIBUTION: Include only facts that directly and specifically describe the entity being summarized.
+Do not carry over facts about co-mentioned entities, even when they are topically related.
         - Preserve each statement's explicit grammatical subject; include only facts that directly and specifically describe that subject.
         - Never reassign a fact to another named subject or co-mentioned entity.
         - Keep facts about co-mentioned entities attached to their own explicit grammatical subjects, even when the facts are topically related.
@@ -92,8 +94,8 @@ def summarize_context(context: dict[str, Any]) -> list[Message]:
         Given the MESSAGES, ENTITY name, and ENTITY CONTEXT, create an updated summary for the ENTITY.
         New facts must be supported by MESSAGES. Preserve durable facts from ENTITY CONTEXT.
         If MESSAGES add no entity-specific durable fact, preserve the existing summary unchanged.
-        Include only facts that directly and specifically describe the ENTITY. Do not transfer facts from
-        co-mentioned entities, even if those facts are topically related.
+ATTRIBUTION: Include only facts that directly and specifically describe the entity being summarized.
+Do not carry over facts about co-mentioned entities, even when they are topically related.
 
         In addition, extract any values for the provided entity properties based on their descriptions.
         If the value of the entity property cannot be found in the current context, set the value of the property to the Python value None.

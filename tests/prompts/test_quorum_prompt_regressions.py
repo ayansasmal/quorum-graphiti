@@ -7,6 +7,12 @@ from graphiti_core.prompts.extract_nodes import (
 )
 from graphiti_core.prompts.summarize_nodes import summarize_context, summarize_pair
 
+CANONICAL_ATTRIBUTION_BLOCK = (
+    'ATTRIBUTION: Include only facts that directly and specifically describe the entity being '
+    'summarized.\n'
+    'Do not carry over facts about co-mentioned entities, even when they are topically related.'
+)
+
 
 def _content(messages: list) -> str:
     return '\n'.join(message.content for message in messages)
@@ -54,7 +60,7 @@ def test_resolve_edge_requires_conservative_fact_contradictions() -> None:
 
 
 @pytest.mark.parametrize(
-    ('prompt_function', 'context', 'attribution_sentences'),
+    ('prompt_function', 'context'),
     [
         (
             extract_summaries_batch,
@@ -66,10 +72,6 @@ def test_resolve_edge_requires_conservative_fact_contradictions() -> None:
                     {'name': 'Northwind', 'summary': 'Northwind was founded by Avery.'},
                 ],
             },
-            (
-                'Include only facts that directly and specifically describe each entity.',
-                'Do not transfer facts from co-mentioned entities, even if those facts are topically related.',
-            ),
         ),
         (
             extract_entity_summaries_from_episodes,
@@ -81,11 +83,6 @@ def test_resolve_edge_requires_conservative_fact_contradictions() -> None:
                     {'name': 'Northwind', 'summary': 'Northwind was founded by Avery.'},
                 ],
             },
-            (
-                'Include only facts that directly and specifically describe the entity being summarized.',
-                'Do not transfer facts from co-mentioned entities, even if those facts are topically related.',
-                'Include only facts that directly and specifically describe each entity. Do not transfer facts from co-mentioned entities, even if those facts are topically related.',
-            ),
         ),
         (
             summarize_context,
@@ -96,11 +93,6 @@ def test_resolve_edge_requires_conservative_fact_contradictions() -> None:
                 'node_summary': 'Northwind was founded by Avery.',
                 'attributes': {'industry': {'description': 'Northwind industry'}},
             },
-            (
-                'Include only facts that directly and specifically describe the ENTITY. Do not transfer facts from co-mentioned entities, even if those facts are topically related.',
-                'Include only facts that directly and specifically describe each entity.',
-                'Do not transfer facts from co-mentioned entities, even if those facts are topically related.',
-            ),
         ),
         (
             summarize_pair,
@@ -110,23 +102,16 @@ def test_resolve_edge_requires_conservative_fact_contradictions() -> None:
                     {'summary': 'Northwind hired Mina as CTO.'},
                 ],
             },
-            (
-                "Preserve each statement's explicit grammatical subject; include only facts that directly and specifically describe that subject.",
-                'Never reassign a fact to another named subject or co-mentioned entity.',
-                'Keep facts about co-mentioned entities attached to their own explicit grammatical subjects, even when the facts are topically related.',
-            ),
         ),
     ],
 )
-def test_entity_summary_prompts_pin_canonical_attribution_rules(
+def test_entity_summary_prompts_include_canonical_attribution_block(
     prompt_function,
     context: dict,
-    attribution_sentences: tuple[str, ...],
 ) -> None:
     rendered_prompt = _content(prompt_function(context))
 
-    for sentence in attribution_sentences:
-        assert sentence in ' '.join(rendered_prompt.split())
+    assert CANONICAL_ATTRIBUTION_BLOCK in rendered_prompt
 
 
 def test_summary_context_preserves_entity_context() -> None:
@@ -166,6 +151,7 @@ def test_summary_pair_preserves_explicit_grammatical_subjects() -> None:
         )
     )
 
+    assert CANONICAL_ATTRIBUTION_BLOCK in rendered_prompt
     assert (
         "Preserve each statement's explicit grammatical subject; include only facts that directly "
         'and specifically describe that subject.' in rendered_prompt
@@ -218,14 +204,8 @@ def test_episode_summary_prompt_preserves_existing_summary_without_new_durable_f
         )
     )
 
+    assert CANONICAL_ATTRIBUTION_BLOCK in rendered_prompt
     assert (
-        'Include only facts that directly and specifically describe the entity being summarized.'
+        'If the new episodes add no durable fact, return the existing summary unchanged.'
         in rendered_prompt
-    )
-    assert (
-        'Do not transfer facts from co-mentioned entities, even if those facts are topically related.'
-        in rendered_prompt
-    )
-    assert 'If the new episodes add no durable fact, return the existing summary unchanged.' in (
-        rendered_prompt
     )
