@@ -63,8 +63,9 @@ def summarize_pair(context: dict[str, Any]) -> list[Message]:
         Synthesize the information from the following two summaries into a single information-dense summary.
 
         IMPORTANT:
-        - Retain entity ownership from each source summary: include only facts that directly and specifically describe the entity that owns each fact.
-        - Do not transfer facts from co-mentioned entities or mix facts between entity owners, even if those facts are topically related.
+        - Preserve each statement's explicit grammatical subject; include only facts that directly and specifically describe that subject.
+        - Never reassign a fact to another named subject or co-mentioned entity.
+        - Keep facts about co-mentioned entities attached to their own explicit grammatical subjects, even when the facts are topically related.
         - Preserve all materially relevant names, roles, places, dates, counts, and changes over time that are explicitly supported.
         - Prefer compact factual sentences over vague thematic phrasing.
         - When the durable fact is the content of what was said, state the content directly instead of narrating that it was said.
@@ -88,9 +89,9 @@ def summarize_context(context: dict[str, Any]) -> list[Message]:
         Message(
             role='user',
             content=f"""
-        Given the MESSAGES and the ENTITY name, create a summary for the ENTITY. Your summary must only use
-        information from the provided MESSAGES. Your summary should also only contain information relevant to the
-        provided ENTITY.
+        Given the MESSAGES, ENTITY name, and ENTITY CONTEXT, create an updated summary for the ENTITY.
+        New facts must be supported by MESSAGES. Preserve durable facts from ENTITY CONTEXT.
+        If MESSAGES add no entity-specific durable fact, preserve the existing summary unchanged.
         Include only facts that directly and specifically describe the ENTITY. Do not transfer facts from
         co-mentioned entities, even if those facts are topically related.
 

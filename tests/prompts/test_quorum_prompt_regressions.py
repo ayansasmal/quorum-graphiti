@@ -92,8 +92,8 @@ def test_resolve_edge_requires_conservative_fact_contradictions() -> None:
             summarize_pair,
             {
                 'node_summaries': [
-                    'Avery founded Northwind.',
-                    'Northwind hired Mina as CTO.',
+                    {'summary': 'Avery founded Northwind.'},
+                    {'summary': 'Northwind hired Mina as CTO.'},
                 ],
             },
         ),
@@ -107,3 +107,71 @@ def test_entity_summary_prompts_require_entity_specific_attribution(
 
     assert 'directly and specifically describe' in rendered_prompt
     assert 'co-mentioned entities' in rendered_prompt
+
+
+def test_summary_context_preserves_entity_context() -> None:
+    rendered_prompt = _content(
+        summarize_context(
+            {
+                'previous_episodes': [{'content': 'Avery founded Northwind.'}],
+                'episode_content': 'Avery: Northwind hired Mina as CTO.',
+                'node_name': 'Northwind',
+                'node_summary': 'Northwind was founded by Avery.',
+                'attributes': {'industry': {'description': 'Northwind industry'}},
+            }
+        )
+    )
+
+    assert 'New facts must be supported by MESSAGES' in rendered_prompt
+    assert 'Preserve durable facts from ENTITY CONTEXT' in rendered_prompt
+    assert (
+        'If MESSAGES add no entity-specific durable fact, preserve the existing summary unchanged.'
+        in rendered_prompt
+    )
+    assert (
+        'summary must only use\n        information from the provided MESSAGES'
+        not in rendered_prompt
+    )
+
+
+def test_summary_pair_preserves_explicit_grammatical_subjects() -> None:
+    rendered_prompt = _content(
+        summarize_pair(
+            {
+                'node_summaries': [
+                    {'summary': 'Avery founded Northwind.'},
+                    {'summary': 'Northwind hired Mina as CTO.'},
+                ],
+            }
+        )
+    )
+
+    assert "Preserve each statement's explicit grammatical subject" in rendered_prompt
+    assert (
+        'Never reassign a fact to another named subject or co-mentioned entity.' in rendered_prompt
+    )
+    assert 'entity ownership' not in rendered_prompt
+
+
+@pytest.mark.parametrize(
+    'prompt_function',
+    [extract_summaries_batch, summarize_context],
+)
+def test_shared_summary_prompts_preserve_existing_summary_without_new_entity_facts(
+    prompt_function,
+) -> None:
+    context = {
+        'previous_episodes': [{'content': 'Avery founded Northwind.'}],
+        'episode_content': 'Avery: Northwind hired Mina as CTO.',
+        'entities': [{'name': 'Northwind', 'summary': 'Northwind was founded by Avery.'}],
+        'node_name': 'Northwind',
+        'node_summary': 'Northwind was founded by Avery.',
+        'attributes': {'industry': {'description': 'Northwind industry'}},
+    }
+
+    rendered_prompt = _content(prompt_function(context))
+
+    assert (
+        'Preserve the existing summary when new messages contain no entity-specific durable fact.'
+        in rendered_prompt
+    )
