@@ -225,7 +225,15 @@ async def extract_edges(
         source_normalized = _normalize_string_exact(edge_data.source_entity_name)
         target_normalized = _normalize_string_exact(edge_data.target_entity_name)
 
-        if source_normalized and source_normalized == target_normalized:
+        if not source_normalized:
+            logger.warning('Dropping malformed edge with blank source entity name')
+            continue
+
+        if not target_normalized:
+            logger.warning('Dropping malformed edge with blank target entity name')
+            continue
+
+        if source_normalized == target_normalized:
             logger.info(
                 'Dropping self-edge for normalized entity name %s',
                 source_normalized,

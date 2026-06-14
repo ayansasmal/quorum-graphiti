@@ -628,6 +628,135 @@ async def test_extract_edges_calls_llm_with_two_distinct_entity_names():
 
 
 @pytest.mark.asyncio
+async def test_extract_edges_uses_first_node_for_duplicate_normalized_names():
+    from graphiti_core.prompts.extract_edges import Edge as ExtractedEdge
+    from graphiti_core.prompts.extract_edges import ExtractedEdges
+
+    first_alice = EntityNode(
+        uuid='uuid-first',
+        name='Alice',
+        group_id='group_1',
+        labels=['Person'],
+    )
+    second_alice = EntityNode(
+        uuid='uuid-second',
+        name=' alice ',
+        group_id='group_1',
+        labels=['Person'],
+    )
+    bob = EntityNode(
+        uuid='bob_uuid',
+        name='Bob',
+        group_id='group_1',
+        labels=['Person'],
+    )
+    llm_response = ExtractedEdges(
+        edges=[
+            ExtractedEdge(
+                source_entity_name='Alice',
+                target_entity_name='Bob',
+                relation_type='KNOWS',
+                fact='Alice knows Bob.',
+            )
+        ]
+    ).model_dump()
+    mock_llm = MagicMock()
+    mock_llm.generate_response = AsyncMock(return_value=llm_response)
+    clients = SimpleNamespace(
+        driver=MagicMock(),
+        llm_client=mock_llm,
+        embedder=MagicMock(),
+        cross_encoder=MagicMock(),
+    )
+    episode = EpisodicNode(
+        uuid='ep_uuid',
+        name='Episode',
+        group_id='group_1',
+        source='message',
+        source_description='desc',
+        content='Alice knows Bob.',
+        valid_at=datetime.now(timezone.utc),
+    )
+
+    edges = await extract_edges(
+        clients,
+        episode,
+        [first_alice, second_alice, bob],
+        [],
+        {},
+        group_id='group_1',
+    )
+
+    assert len(edges) == 1
+    assert edges[0].source_node_uuid == 'uuid-first'
+    assert edges[0].target_node_uuid == 'bob_uuid'
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ('source_name', 'target_name', 'blank_endpoint'),
+    [
+        ('   ', 'Bob', 'source'),
+        ('Alice', '\t', 'target'),
+    ],
+)
+async def test_extract_edges_drops_blank_normalized_endpoint_names(
+    caplog,
+    source_name,
+    target_name,
+    blank_endpoint,
+):
+    from graphiti_core.prompts.extract_edges import Edge as ExtractedEdge
+    from graphiti_core.prompts.extract_edges import ExtractedEdges
+
+    nodes = [
+        EntityNode(uuid='alice_uuid', name='Alice', group_id='group_1', labels=['Person']),
+        EntityNode(uuid='bob_uuid', name='Bob', group_id='group_1', labels=['Person']),
+    ]
+    llm_response = ExtractedEdges(
+        edges=[
+            ExtractedEdge(
+                source_entity_name=source_name,
+                target_entity_name=target_name,
+                relation_type='KNOWS',
+                fact='Alice knows Bob.',
+            )
+        ]
+    ).model_dump()
+    mock_llm = MagicMock()
+    mock_llm.generate_response = AsyncMock(return_value=llm_response)
+    clients = SimpleNamespace(
+        driver=MagicMock(),
+        llm_client=mock_llm,
+        embedder=MagicMock(),
+        cross_encoder=MagicMock(),
+    )
+    episode = EpisodicNode(
+        uuid='ep_uuid',
+        name='Episode',
+        group_id='group_1',
+        source='message',
+        source_description='desc',
+        content='Alice knows Bob.',
+        valid_at=datetime.now(timezone.utc),
+    )
+
+    with caplog.at_level('WARNING'):
+        edges = await extract_edges(
+            clients,
+            episode,
+            nodes,
+            [],
+            {},
+            group_id='group_1',
+        )
+
+    assert edges == []
+    assert f'Dropping malformed edge with blank {blank_endpoint} entity name' in caplog.messages
+    mock_llm.generate_response.assert_awaited_once()
+
+
+@pytest.mark.asyncio
 async def test_extract_edges_drops_normalized_self_edge_names(caplog):
     from graphiti_core.prompts.extract_edges import Edge as ExtractedEdge
     from graphiti_core.prompts.extract_edges import ExtractedEdges
