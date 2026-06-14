@@ -130,6 +130,7 @@ def edge(context: dict[str, Any]) -> list[Message]:
 {edge_types_section}
 # TASK
 Extract all factual relationships between the given ENTITIES based on the CURRENT MESSAGE.
+If ENTITIES contains fewer than two distinct names, return {{"edges": []}} immediately.
 Only extract facts that:
 - involve two DISTINCT ENTITIES from the ENTITIES list,
 - are clearly stated or unambiguously implied in the CURRENT MESSAGE,
@@ -146,6 +147,8 @@ You may use information from the PREVIOUS MESSAGES only to disambiguate referenc
 1. **Entity Name Validation**: `source_entity_name` and `target_entity_name` must use only the `name` values from the ENTITIES list provided above.
    - **CRITICAL**: Using names not in the list will cause the edge to be rejected
 2. Each fact must involve two **distinct** entities — `source_entity_name` and `target_entity_name` NEVER refer to the same entity.
+   - NEVER create an edge whose normalized source and target names refer to the same entity.
+   - NEVER fabricate a relationship merely because a message contains an action word.
 3. Prefer facts that involve two distinct entities from the ENTITIES list. When a sentence describes a specific, concrete detail about a single entity (a brand name, a specific item, a physical description, a quantity, a location, a named activity), do NOT drop it. Instead, look for a second entity in the ENTITIES list that the detail relates to and form a proper triple (e.g., Entity -> OWNS -> item-entity, Entity -> LIVES_IN -> place-entity, Entity -> HAS_ATTRIBUTE -> detail-entity). Only skip the fact when no second entity in the ENTITIES list can anchor the detail.
    - BAD: "Alice feels happy" (vague single-entity state with no concrete detail — what is Alice happy about?)
    - GOOD: "Alice feels happy about Bob's promotion" → Alice -> FEELS_HAPPY_ABOUT -> Bob's promotion

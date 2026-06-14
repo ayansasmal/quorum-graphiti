@@ -561,6 +561,132 @@ def test_edge_type_signatures_map_single_signature_still_works():
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    'nodes',
+    [
+        [],
+        [EntityNode(uuid='alice-1', name='Alice', group_id='group_1', labels=['Person'])],
+        [
+            EntityNode(uuid='alice-1', name=' Alice ', group_id='group_1', labels=['Person']),
+            EntityNode(uuid='alice-2', name='alice', group_id='group_1', labels=['Person']),
+        ],
+    ],
+)
+async def test_extract_edges_skips_llm_without_two_distinct_entity_names(nodes):
+    mock_llm = MagicMock()
+    mock_llm.generate_response = AsyncMock(return_value={'edges': []})
+    clients = SimpleNamespace(
+        driver=MagicMock(),
+        llm_client=mock_llm,
+        embedder=MagicMock(),
+        cross_encoder=MagicMock(),
+    )
+    episode = EpisodicNode(
+        uuid='ep_uuid',
+        name='Episode',
+        group_id='group_1',
+        source='message',
+        source_description='desc',
+        content='[AUDIT] OUTCOME by Alice | tool: remember | pos: 88',
+        valid_at=datetime.now(timezone.utc),
+    )
+
+    edges = await extract_edges(clients, episode, nodes, [], {}, group_id='group_1')
+
+    assert edges == []
+    mock_llm.generate_response.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_extract_edges_calls_llm_with_two_distinct_entity_names():
+    mock_llm = MagicMock()
+    mock_llm.generate_response = AsyncMock(return_value={'edges': []})
+    clients = SimpleNamespace(
+        driver=MagicMock(),
+        llm_client=mock_llm,
+        embedder=MagicMock(),
+        cross_encoder=MagicMock(),
+    )
+    episode = EpisodicNode(
+        uuid='ep_uuid',
+        name='Episode',
+        group_id='group_1',
+        source='message',
+        source_description='desc',
+        content='Alice congratulated Bob.',
+        valid_at=datetime.now(timezone.utc),
+    )
+    nodes = [
+        EntityNode(uuid='alice_uuid', name='Alice', group_id='group_1', labels=['Person']),
+        EntityNode(uuid='bob_uuid', name='Bob', group_id='group_1', labels=['Person']),
+    ]
+
+    edges = await extract_edges(clients, episode, nodes, [], {}, group_id='group_1')
+
+    assert edges == []
+    mock_llm.generate_response.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_extract_edges_drops_normalized_self_edge_names(caplog):
+    from graphiti_core.prompts.extract_edges import Edge as ExtractedEdge
+    from graphiti_core.prompts.extract_edges import ExtractedEdges
+
+    alice = EntityNode(
+        uuid='alice_uuid',
+        name='Alice',
+        group_id='group_1',
+        labels=['Person'],
+    )
+    bob = EntityNode(
+        uuid='bob_uuid',
+        name='Bob',
+        group_id='group_1',
+        labels=['Person'],
+    )
+    llm_response = ExtractedEdges(
+        edges=[
+            ExtractedEdge(
+                source_entity_name=' Alice ',
+                target_entity_name='alice',
+                relation_type='REMEMBERS',
+                fact='Alice remembers something.',
+            )
+        ]
+    ).model_dump()
+    mock_llm = MagicMock()
+    mock_llm.generate_response = AsyncMock(return_value=llm_response)
+    clients = SimpleNamespace(
+        driver=MagicMock(),
+        llm_client=mock_llm,
+        embedder=MagicMock(),
+        cross_encoder=MagicMock(),
+    )
+    episode = EpisodicNode(
+        uuid='ep_uuid',
+        name='Episode',
+        group_id='group_1',
+        source='message',
+        source_description='desc',
+        content='Alice remembers something.',
+        valid_at=datetime.now(timezone.utc),
+    )
+
+    with caplog.at_level('INFO'):
+        edges = await extract_edges(
+            clients,
+            episode,
+            [alice, bob],
+            [],
+            {},
+            group_id='group_1',
+        )
+
+    assert edges == []
+    assert 'Dropping self-edge for normalized entity name alice' in caplog.messages
+
+
+@pytest.mark.asyncio
 async def test_extract_edges_drops_self_edges(monkeypatch):
     """Self-edges (source == target) are dropped during extraction."""
     from graphiti_core.prompts.extract_edges import Edge as ExtractedEdge

@@ -141,6 +141,13 @@ async def extract_edges(
     extract_edges_max_tokens = 16384
     llm_client = clients.llm_client
 
+    distinct_node_names = {
+        normalized_name for node in nodes if (normalized_name := _normalize_string_exact(node.name))
+    }
+    if len(distinct_node_names) < 2:
+        logger.debug('Skipping edge extraction: fewer than two distinct entity names')
+        return []
+
     # Build mapping from edge type name to list of valid signatures
     edge_type_signatures_map: dict[str, list[tuple[str, str]]] = {}
     for signature, edge_type_names in edge_type_map.items():
@@ -164,8 +171,12 @@ async def extract_edges(
         else []
     )
 
-    # Build name-to-node mapping for validation
-    name_to_node: dict[str, EntityNode] = {node.name: node for node in nodes}
+    # Build a deterministic normalized lookup, preserving the first node for duplicate names.
+    normalized_name_to_node: dict[str, EntityNode] = {}
+    for node in nodes:
+        normalized_name = _normalize_string_exact(node.name)
+        if normalized_name and normalized_name not in normalized_name_to_node:
+            normalized_name_to_node[normalized_name] = node
 
     # Build episode attribution instructions for multi-episode extraction
     episode_attribution = ''
@@ -209,20 +220,30 @@ async def extract_edges(
     all_edges_data = ExtractedEdges(**llm_response).edges
 
     # Validate entity names
-    edges_data: list[ExtractedEdge] = []
+    resolved_edges_data: list[tuple[ExtractedEdge, EntityNode, EntityNode]] = []
     for edge_data in all_edges_data:
-        source_name = edge_data.source_entity_name
-        target_name = edge_data.target_entity_name
+        source_normalized = _normalize_string_exact(edge_data.source_entity_name)
+        target_normalized = _normalize_string_exact(edge_data.target_entity_name)
+
+        if source_normalized and source_normalized == target_normalized:
+            logger.info(
+                'Dropping self-edge for normalized entity name %s',
+                source_normalized,
+            )
+            continue
+
+        source_node = normalized_name_to_node.get(source_normalized)
+        target_node = normalized_name_to_node.get(target_normalized)
 
         # Validate LLM-returned names exist in the nodes list
-        if source_name not in name_to_node:
+        if source_node is None:
             logger.warning(
                 'Source entity not found in nodes for edge relation: %s',
                 edge_data.relation_type,
             )
             continue
 
-        if target_name not in name_to_node:
+        if target_node is None:
             logger.warning(
                 'Target entity not found in nodes for edge relation: %s',
                 edge_data.relation_type,
@@ -230,8 +251,6 @@ async def extract_edges(
             continue
 
         # Drop self-edges where source and target resolve to the same node
-        source_node = name_to_node[source_name]
-        target_node = name_to_node[target_name]
         if source_node.uuid == target_node.uuid:
             logger.info(
                 'Dropping self-edge for node %s (source and target resolve to same node)',
@@ -239,17 +258,17 @@ async def extract_edges(
             )
             continue
 
-        edges_data.append(edge_data)
+        resolved_edges_data.append((edge_data, source_node, target_node))
 
     end = time()
-    logger.debug(f'Extracted {len(edges_data)} new edges in {(end - start) * 1000:.0f} ms')
+    logger.debug(f'Extracted {len(resolved_edges_data)} new edges in {(end - start) * 1000:.0f} ms')
 
-    if len(edges_data) == 0:
+    if len(resolved_edges_data) == 0:
         return []
 
     # Convert the extracted data into EntityEdge objects
     edges = []
-    for edge_data in edges_data:
+    for edge_data, source_node, target_node in resolved_edges_data:
         # Validate Edge Date information
         valid_at = edge_data.valid_at
         invalid_at = edge_data.invalid_at
@@ -258,14 +277,6 @@ async def extract_edges(
 
         # Filter out empty edges
         if not edge_data.fact.strip():
-            continue
-
-        # Names already validated above
-        source_node = name_to_node.get(edge_data.source_entity_name)
-        target_node = name_to_node.get(edge_data.target_entity_name)
-
-        if source_node is None or target_node is None:
-            logger.warning('Could not find source or target node for extracted edge')
             continue
 
         source_node_uuid = source_node.uuid
