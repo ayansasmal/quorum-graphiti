@@ -28,6 +28,10 @@ container belong here, not in the Quorum gateway.
   normalized node names resolve deterministically to the first node.
 - Verify the Quorum edge guards with
   `UV_CACHE_DIR=/tmp/quorum-graphiti-uv-cache DISABLE_FALKORDB=1 DISABLE_KUZU=1 DISABLE_NEPTUNE=1 uv run --frozen pytest tests/utils/maintenance/test_edge_operations.py -q`.
+- Entity summary prompts use the canonical `ATTRIBUTION:` block: retain only facts directly
+  describing each entity, never carry facts across co-mentioned entities, and preserve durable
+  existing summaries when new input adds no entity-specific fact. Pair summarization retains every
+  explicit grammatical subject because community summaries can contain multiple entities.
 
 ## Project Overview
 
