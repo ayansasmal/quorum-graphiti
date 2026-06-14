@@ -1,4 +1,15 @@
+import pytest
+
 from graphiti_core.prompts.dedupe_edges import resolve_edge
+from graphiti_core.prompts.extract_nodes import (
+    extract_entity_summaries_from_episodes,
+    extract_summaries_batch,
+)
+from graphiti_core.prompts.summarize_nodes import summarize_context, summarize_pair
+
+
+def _content(messages: list) -> str:
+    return '\n'.join(message.content for message in messages)
 
 
 def test_resolve_edge_requires_conservative_fact_contradictions() -> None:
@@ -26,7 +37,7 @@ def test_resolve_edge_requires_conservative_fact_contradictions() -> None:
         }
     )
 
-    rendered_prompt = '\n'.join(message.content for message in messages)
+    rendered_prompt = _content(messages)
 
     assert 'conservative fact deduplication assistant' in rendered_prompt
     assert 'SAME specific subject or entity relationship' in rendered_prompt
@@ -40,3 +51,59 @@ def test_resolve_edge_requires_conservative_fact_contradictions() -> None:
     assert 'Next.js Pages Router project entry point' in rendered_prompt
     assert 'public review routes using NextAuth' in rendered_prompt
     assert 'duplicate_facts=[], contradicted_facts=[]' in rendered_prompt
+
+
+@pytest.mark.parametrize(
+    ('prompt_function', 'context'),
+    [
+        (
+            extract_summaries_batch,
+            {
+                'previous_episodes': [{'content': 'Avery founded Northwind.'}],
+                'episode_content': 'Avery: Northwind hired Mina as CTO.',
+                'entities': [
+                    {'name': 'Avery', 'summary': 'Avery founded Northwind.'},
+                    {'name': 'Northwind', 'summary': 'Northwind was founded by Avery.'},
+                ],
+            },
+        ),
+        (
+            extract_entity_summaries_from_episodes,
+            {
+                'previous_episodes': [{'content': 'Avery founded Northwind.'}],
+                'episode_content': 'Avery: Northwind hired Mina as CTO.',
+                'entities': [
+                    {'name': 'Avery', 'summary': 'Avery founded Northwind.'},
+                    {'name': 'Northwind', 'summary': 'Northwind was founded by Avery.'},
+                ],
+            },
+        ),
+        (
+            summarize_context,
+            {
+                'previous_episodes': [{'content': 'Avery founded Northwind.'}],
+                'episode_content': 'Avery: Northwind hired Mina as CTO.',
+                'node_name': 'Northwind',
+                'node_summary': 'Northwind was founded by Avery.',
+                'attributes': {'industry': {'description': 'Northwind industry'}},
+            },
+        ),
+        (
+            summarize_pair,
+            {
+                'node_summaries': [
+                    'Avery founded Northwind.',
+                    'Northwind hired Mina as CTO.',
+                ],
+            },
+        ),
+    ],
+)
+def test_entity_summary_prompts_require_entity_specific_attribution(
+    prompt_function,
+    context: dict,
+) -> None:
+    rendered_prompt = _content(prompt_function(context))
+
+    assert 'directly and specifically describe' in rendered_prompt
+    assert 'co-mentioned entities' in rendered_prompt

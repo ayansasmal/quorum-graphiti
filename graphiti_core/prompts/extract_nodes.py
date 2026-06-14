@@ -559,6 +559,8 @@ What to capture:
 - Current state over superseded state when newer episodes clearly update older information
 
 Rules:
+- Include only facts that directly and specifically describe the entity being summarized.
+- Do not transfer facts from co-mentioned entities, even if those facts are topically related.
 - Be exhaustive within the evidence. Prefer retaining a supported concrete detail over omitting it for brevity.
 - NEVER infer preferences, habits, recurrence, frequency, causality, intent, importance, or category \
 from a name, a single mention, or weak evidence.
@@ -625,6 +627,8 @@ Preserve all material names, roles, dates, counts, and changes over time that ar
 
 For each entity below, generate an updated summary using ONLY the provided EPISODES and any \
 existing summary already on the entity.
+Include only facts that directly and specifically describe each entity. Do not transfer facts from \
+co-mentioned entities, even if those facts are topically related.
 
 <EPISODES>
 {to_prompt_json(context['previous_episodes'])}

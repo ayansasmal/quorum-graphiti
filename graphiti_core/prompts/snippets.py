@@ -27,6 +27,9 @@ summary_instructions = f"""Guidelines:
         8. Never use filler verbs like "mentioned", "described", "stated", "reported", "noted", "discussed", "referenced", or "indicated" unless the communication act itself is the fact.
         9. Include temporal anchors when the messages provide them and they help ground the fact.
         10. Begin with the entity name or a direct fact, not with "A", "An", "The", or "This is" unless that wording is part of the entity name.
+        11. Include only facts that directly and specifically describe each entity.
+        12. Do not transfer facts from co-mentioned entities, even if those facts are topically related.
+        13. Preserve the existing summary when new messages contain no entity-specific durable fact.
 
         Example summary:
         BAD: "The context shows John ordered pizza. Due to length constraints, other details are omitted from this summary."
