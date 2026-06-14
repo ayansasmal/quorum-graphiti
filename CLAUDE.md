@@ -32,6 +32,9 @@ container belong here, not in the Quorum gateway.
   describing each entity, never carry facts across co-mentioned entities, and preserve durable
   existing summaries when new input adds no entity-specific fact. Pair summarization retains every
   explicit grammatical subject because community summaries can contain multiple entities.
+- Production ingestion prompts use balanced `<PREVIOUS_MESSAGES>` delimiters. The spaced
+  `<PREVIOUS MESSAGES>` form remains only in the offline evaluation module and must not be
+  reintroduced into extraction or deduplication prompts.
 
 ## Project Overview
 

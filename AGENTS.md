@@ -30,6 +30,9 @@ container belong here, not in the Quorum gateway.
   describing each entity, never carry facts across co-mentioned entities, and preserve durable
   existing summaries when new input adds no entity-specific fact. Pair summarization retains every
   explicit grammatical subject because community summaries can contain multiple entities.
+- Production ingestion prompts use balanced `<PREVIOUS_MESSAGES>` delimiters. The spaced
+  `<PREVIOUS MESSAGES>` form remains only in the offline evaluation module and must not be
+  reintroduced into extraction or deduplication prompts.
 
 ## Project Structure & Module Organization
 Graphiti's core library lives under `graphiti_core/`, split into domain modules such as `nodes.py`, `edges.py`, `models/`, and `search/` for retrieval pipelines. Database drivers in `graphiti_core/driver/` support Neo4j, FalkorDB, and Neptune (plus a deprecated Kuzu driver). Additional core modules include `cross_encoder/` (reranking via BGE, OpenAI, and Gemini), `telemetry/` (OpenTelemetry tracing), `namespaces/` (namespace management), and `migrations/` (database migrations). Service adapters and API glue reside in `server/graph_service/`, while the MCP integration lives in `mcp_server/` (with its own `src/`, `tests/`, `config/`, and `docker/` subdirectories). Shared assets sit in `images/` and `examples/`. Tests cover the core package via `tests/`, with configuration in `conftest.py`, `pytest.ini`, and Docker compose files for optional services. Specifications live in `spec/` and type signatures in `signatures/`. Tooling manifests live at the repo root, including `pyproject.toml`, `Makefile`, and deployment compose files.
