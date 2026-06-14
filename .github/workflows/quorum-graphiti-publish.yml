@@ -1,0 +1,86 @@
+name: Publish Quorum Graphiti MCP Image
+
+# Builds ghcr.io/ayansasmal/graphiti-mcp:sha-<commit> from the local
+# graphiti_core source (Dockerfile.quorum). Triggered on every push to main
+# that touches the core library, MCP server, or this workflow, and on manual
+# dispatch. Publishing never auto-deploys: Quorum production must explicitly
+# update the graphitiTag pin in quorum/crossplane/environments/prod.yaml.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'graphiti_core/**'
+      - 'mcp_server/**'
+      - '.github/workflows/quorum-graphiti-publish.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: quorum-publish-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Compute immutable image tag
+        id: tag
+        run: |
+          echo "sha_tag=sha-$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up QEMU (multi-arch emulation)
+        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff9c6eb7829b0c2ae9e # v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@b5730b40e8ef0c5db2a7b1a7e1e1f1a11fe3f9e4 # v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push multi-platform image
+        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6
+        with:
+          context: .
+          file: mcp_server/docker/Dockerfile.quorum
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ghcr.io/ayansasmal/graphiti-mcp:${{ steps.tag.outputs.sha_tag }}
+          build-args: |
+            VCS_REF=${{ github.sha }}
+          labels: |
+            org.opencontainers.image.created=${{ steps.tag.outputs.build_date }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Publish summary
+        env:
+          SHA_TAG: ${{ steps.tag.outputs.sha_tag }}
+          BUILD_DATE: ${{ steps.tag.outputs.build_date }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          {
+            echo "## Quorum Graphiti MCP Image Published"
+            echo ""
+            echo "| Field | Value |"
+            echo "|-------|-------|"
+            echo "| **Image** | \`ghcr.io/ayansasmal/graphiti-mcp:${SHA_TAG}\` |"
+            echo "| **Commit** | \`${COMMIT_SHA}\` |"
+            echo "| **Built at** | \`${BUILD_DATE}\` |"
+            echo "| **Platforms** | \`linux/amd64\`, \`linux/arm64\` |"
+            echo ""
+            echo "> **Next step:** pin this tag in \`quorum/crossplane/environments/prod.yaml\` after verification."
+          } >> "$GITHUB_STEP_SUMMARY"
