@@ -3,9 +3,19 @@ from pathlib import Path
 import pytest
 
 from graphiti_core.prompts.dedupe_edges import resolve_edge
+from graphiti_core.prompts.dedupe_nodes import node as dedupe_node
+from graphiti_core.prompts.dedupe_nodes import nodes as dedupe_nodes
+from graphiti_core.prompts.extract_edges import edge as extract_edge
 from graphiti_core.prompts.extract_nodes import (
+    classify_nodes,
     extract_entity_summaries_from_episodes,
     extract_summaries_batch,
+)
+from graphiti_core.prompts.extract_nodes import (
+    extract_message as extract_nodes_message,
+)
+from graphiti_core.prompts.extract_nodes_and_edges import (
+    extract_message as extract_nodes_and_edges_message,
 )
 from graphiti_core.prompts.summarize_nodes import summarize_context, summarize_pair
 
@@ -22,6 +32,8 @@ PRODUCTION_EXTRACTION_PROMPT_MODULES = (
     'graphiti_core/prompts/extract_edges.py',
 )
 
+PREVIOUS_MESSAGE_SENTINEL = 'SENTINEL previous-message prompt boundary'
+
 
 def _content(messages: list) -> str:
     return '\n'.join(message.content for message in messages)
@@ -36,6 +48,88 @@ def test_production_extraction_prompts_use_underscore_previous_message_tags(
 
     assert '<PREVIOUS MESSAGES>' not in source
     assert '</PREVIOUS MESSAGES>' not in source
+
+
+@pytest.mark.parametrize(
+    ('prompt_function', 'context'),
+    [
+        (
+            extract_nodes_and_edges_message,
+            {
+                'episode_content': 'Avery: Northwind hired Mina.',
+                'previous_episodes': [{'content': PREVIOUS_MESSAGE_SENTINEL}],
+                'custom_extraction_instructions': '',
+                'entity_types': [{'entity_type_name': 'Person'}],
+                'edge_types': None,
+            },
+        ),
+        (
+            extract_nodes_message,
+            {
+                'episode_content': 'Avery: Northwind hired Mina.',
+                'previous_episodes': [{'content': PREVIOUS_MESSAGE_SENTINEL}],
+                'custom_extraction_instructions': '',
+                'entity_types': [{'entity_type_name': 'Person'}],
+            },
+        ),
+        (
+            classify_nodes,
+            {
+                'episode_content': 'Avery: Northwind hired Mina.',
+                'previous_episodes': [{'content': PREVIOUS_MESSAGE_SENTINEL}],
+                'extracted_entities': [{'name': 'Avery'}],
+                'entity_types': [{'entity_type_name': 'Person'}],
+            },
+        ),
+        (
+            dedupe_node,
+            {
+                'episode_content': 'Avery: Northwind hired Mina.',
+                'previous_episodes': [{'content': PREVIOUS_MESSAGE_SENTINEL}],
+                'extracted_node': {'name': 'Avery'},
+                'entity_type_description': 'A person',
+                'existing_nodes': [],
+            },
+        ),
+        (
+            dedupe_nodes,
+            {
+                'episode_content': 'Avery: Northwind hired Mina.',
+                'previous_episodes': [{'content': PREVIOUS_MESSAGE_SENTINEL}],
+                'extracted_nodes': [{'id': 0, 'name': 'Avery'}],
+                'existing_nodes': [],
+            },
+        ),
+        (
+            extract_edge,
+            {
+                'episode_content': 'Avery: Northwind hired Mina.',
+                'previous_episodes': [{'content': PREVIOUS_MESSAGE_SENTINEL}],
+                'nodes': [{'name': 'Northwind'}, {'name': 'Mina'}],
+                'reference_time': '2026-06-15T00:00:00Z',
+                'edge_types': None,
+                'custom_extraction_instructions': '',
+            },
+        ),
+    ],
+)
+def test_rendered_production_prompts_use_balanced_previous_message_tags(
+    prompt_function,
+    context: dict,
+) -> None:
+    rendered_prompt = _content(prompt_function(context))
+    opening_tag = '<PREVIOUS_MESSAGES>'
+    closing_tag = '</PREVIOUS_MESSAGES>'
+
+    assert rendered_prompt.count(opening_tag) == 1
+    assert rendered_prompt.count(closing_tag) == 1
+    assert (
+        rendered_prompt.index(opening_tag)
+        < rendered_prompt.index(PREVIOUS_MESSAGE_SENTINEL)
+        < rendered_prompt.index(closing_tag)
+    )
+    assert '<PREVIOUS MESSAGES>' not in rendered_prompt
+    assert '</PREVIOUS MESSAGES>' not in rendered_prompt
 
 
 def test_resolve_edge_requires_conservative_fact_contradictions() -> None:
