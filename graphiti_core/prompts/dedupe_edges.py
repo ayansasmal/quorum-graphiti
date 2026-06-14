@@ -44,8 +44,12 @@ def resolve_edge(context: dict[str, Any]) -> list[Message]:
     return [
         Message(
             role='system',
-            content='You are a fact deduplication assistant. '
-            'NEVER mark facts with key differences as duplicates.',
+            content='You are a conservative fact deduplication assistant. '
+            'NEVER mark facts with key differences as duplicates. '
+            'Only mark a contradiction when facts concern the SAME specific subject or entity '
+            'relationship and make logically INCOMPATIBLE claims. '
+            'Facts about different subjects are NEVER contradictions. '
+            'When uncertain, return empty lists.',
         ),
         Message(
             role='user',
@@ -82,6 +86,14 @@ EXISTING FACTS are indexed first, followed by FACT INVALIDATION CANDIDATES.
    - Return all contradicted idx values in contradicted_facts.
    - If no contradictions, return an empty list for contradicted_facts.
 
+CONTRADICTION REQUIREMENTS:
+- The facts must describe the SAME specific subject or entity relationship.
+- The facts must make logically INCOMPATIBLE claims that cannot both be true.
+- Topical similarity or presence in FACT INVALIDATION CANDIDATES is not enough.
+- Facts about different subjects are NEVER contradictions.
+- If uncertain whether a fact is contradicted, omit its idx and return empty lists when no
+  confident duplicate or contradiction exists.
+
 <EXAMPLE>
 EXISTING FACT: idx=0, "Alice joined Acme Corp in 2020"
 NEW FACT: "Alice joined Acme Corp in 2020"
@@ -94,6 +106,10 @@ Result: duplicate_facts=[], contradicted_facts=[1] (same relationship but update
 EXISTING FACT: idx=2, "Bob ran 5 miles on Tuesday"
 NEW FACT: "Bob ran 3 miles on Wednesday"
 Result: duplicate_facts=[], contradicted_facts=[] (different events on different days — neither duplicate nor contradiction)
+
+EXISTING FACT: idx=3, "The Next.js Pages Router project entry point is pages/_app.tsx"
+NEW FACT: "The incoming public review routes using NextAuth require authentication"
+Result: duplicate_facts=[], contradicted_facts=[] (different subjects and relationships — neither duplicate nor contradiction)
 </EXAMPLE>
 """,
         ),
