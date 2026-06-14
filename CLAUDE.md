@@ -18,6 +18,11 @@ container belong here, not in the Quorum gateway.
   image tag in `quorum/crossplane/environments/prod.yaml`.
 - Do not suppress Quorum audit episodes. Guard invalid relationship extraction while preserving
   episode ingestion and lineage.
+- Fact invalidation in `graphiti_core/prompts/dedupe_edges.py` is conservative: contradictions
+  require the same specific subject or entity relationship plus logically incompatible claims.
+  Uncertainty may empty `contradicted_facts`, but must not suppress a confident duplicate.
+- Verify the Quorum fact-invalidation prompt contract with
+  `UV_CACHE_DIR=/tmp/quorum-graphiti-uv-cache DISABLE_FALKORDB=1 DISABLE_KUZU=1 DISABLE_NEPTUNE=1 uv run --frozen pytest tests/prompts/test_quorum_prompt_regressions.py -q`.
 
 ## Project Overview
 

@@ -16,6 +16,11 @@ container belong here, not in the Quorum gateway.
   image tag in `quorum/crossplane/environments/prod.yaml`.
 - Do not suppress Quorum audit episodes. Guard invalid relationship extraction while preserving
   episode ingestion and lineage.
+- Fact invalidation in `graphiti_core/prompts/dedupe_edges.py` is conservative: contradictions
+  require the same specific subject or entity relationship plus logically incompatible claims.
+  Uncertainty may empty `contradicted_facts`, but must not suppress a confident duplicate.
+- Verify the Quorum fact-invalidation prompt contract with
+  `UV_CACHE_DIR=/tmp/quorum-graphiti-uv-cache DISABLE_FALKORDB=1 DISABLE_KUZU=1 DISABLE_NEPTUNE=1 uv run --frozen pytest tests/prompts/test_quorum_prompt_regressions.py -q`.
 
 ## Project Structure & Module Organization
 Graphiti's core library lives under `graphiti_core/`, split into domain modules such as `nodes.py`, `edges.py`, `models/`, and `search/` for retrieval pipelines. Database drivers in `graphiti_core/driver/` support Neo4j, FalkorDB, and Neptune (plus a deprecated Kuzu driver). Additional core modules include `cross_encoder/` (reranking via BGE, OpenAI, and Gemini), `telemetry/` (OpenTelemetry tracing), `namespaces/` (namespace management), and `migrations/` (database migrations). Service adapters and API glue reside in `server/graph_service/`, while the MCP integration lives in `mcp_server/` (with its own `src/`, `tests/`, `config/`, and `docker/` subdirectories). Shared assets sit in `images/` and `examples/`. Tests cover the core package via `tests/`, with configuration in `conftest.py`, `pytest.ini`, and Docker compose files for optional services. Specifications live in `spec/` and type signatures in `signatures/`. Tooling manifests live at the repo root, including `pyproject.toml`, `Makefile`, and deployment compose files.
