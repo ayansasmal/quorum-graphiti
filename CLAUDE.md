@@ -23,6 +23,11 @@ container belong here, not in the Quorum gateway.
   Uncertainty may empty `contradicted_facts`, but must not suppress a confident duplicate.
 - Verify the Quorum fact-invalidation prompt contract with
   `UV_CACHE_DIR=/tmp/quorum-graphiti-uv-cache DISABLE_FALKORDB=1 DISABLE_KUZU=1 DISABLE_NEPTUNE=1 uv run --frozen pytest tests/prompts/test_quorum_prompt_regressions.py -q`.
+- Edge extraction returns before the LLM when fewer than two distinct normalized entity names
+  exist. Model-produced blank endpoints and normalized self-edges are rejected, while duplicate
+  normalized node names resolve deterministically to the first node.
+- Verify the Quorum edge guards with
+  `UV_CACHE_DIR=/tmp/quorum-graphiti-uv-cache DISABLE_FALKORDB=1 DISABLE_KUZU=1 DISABLE_NEPTUNE=1 uv run --frozen pytest tests/utils/maintenance/test_edge_operations.py -q`.
 
 ## Project Overview
 
