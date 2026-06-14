@@ -153,15 +153,14 @@ def test_summary_pair_preserves_explicit_grammatical_subjects() -> None:
 
     assert CANONICAL_ATTRIBUTION_BLOCK in rendered_prompt
     assert (
-        "Preserve each statement's explicit grammatical subject; include only facts that directly "
-        'and specifically describe that subject.' in rendered_prompt
+        'For this multi-subject merge, each explicit grammatical subject in the source summaries '
+        'is an entity being summarized.' in rendered_prompt
     )
+    assert 'Retain all supported facts for every explicit grammatical subject.' in rendered_prompt
+    assert 'Never reassign facts between subjects.' in rendered_prompt
     assert (
-        'Never reassign a fact to another named subject or co-mentioned entity.' in rendered_prompt
-    )
-    assert (
-        'Keep facts about co-mentioned entities attached to their own explicit grammatical '
-        'subjects, even when the facts are topically related.' in rendered_prompt
+        'Do not drop valid facts merely because the source summaries contain multiple entities.'
+        in rendered_prompt
     )
     assert 'entity ownership' not in rendered_prompt
 

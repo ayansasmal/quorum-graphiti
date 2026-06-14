@@ -65,9 +65,10 @@ def summarize_pair(context: dict[str, Any]) -> list[Message]:
         IMPORTANT:
 ATTRIBUTION: Include only facts that directly and specifically describe the entity being summarized.
 Do not carry over facts about co-mentioned entities, even when they are topically related.
-        - Preserve each statement's explicit grammatical subject; include only facts that directly and specifically describe that subject.
-        - Never reassign a fact to another named subject or co-mentioned entity.
-        - Keep facts about co-mentioned entities attached to their own explicit grammatical subjects, even when the facts are topically related.
+        - For this multi-subject merge, each explicit grammatical subject in the source summaries is an entity being summarized.
+        - Retain all supported facts for every explicit grammatical subject.
+        - Never reassign facts between subjects.
+        - Do not drop valid facts merely because the source summaries contain multiple entities.
         - Preserve all materially relevant names, roles, places, dates, counts, and changes over time that are explicitly supported.
         - Prefer compact factual sentences over vague thematic phrasing.
         - When the durable fact is the content of what was said, state the content directly instead of narrating that it was said.
