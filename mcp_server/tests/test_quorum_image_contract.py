@@ -3,6 +3,9 @@
 from pathlib import Path
 
 import tomllib
+from mcp.server.transport_security import TransportSecurityMiddleware
+
+from src.graphiti_mcp_server import mcp
 
 DOCKERFILE_PATH = Path(__file__).parents[1] / 'docker' / 'Dockerfile.quorum'
 MCP_PYPROJECT_PATH = Path(__file__).parents[1] / 'pyproject.toml'
@@ -78,6 +81,18 @@ def test_exposes_streamable_http_runtime_contract() -> None:
     assert 'EXPOSE 8000' in dockerfile_text
     assert 'http://localhost:8000/health' in dockerfile_text
     assert 'CMD ["python", "main.py"]' in dockerfile_text
+
+
+def test_transport_security_accepts_docker_hostname() -> None:
+    """The MCP endpoint must accept Quorum's internal Docker service hostname."""
+    settings = mcp.settings.transport_security
+
+    assert settings is not None
+    assert settings.enable_dns_rebinding_protection is True
+
+    middleware = TransportSecurityMiddleware(settings)
+    assert middleware._validate_host('graphiti:8000') is True
+    assert middleware._validate_host('untrusted.example') is False
 
 
 def test_sets_required_oci_image_labels() -> None:

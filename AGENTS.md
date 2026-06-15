@@ -14,6 +14,9 @@ container belong here, not in the Quorum gateway.
   `ghcr.io/ayansasmal/graphiti-mcp:sha-<commit>`.
 - Publishing does not deploy automatically. Quorum production must explicitly pin the verified
   image tag in `quorum/crossplane/environments/prod.yaml`.
+- Quorum job and gateway containers call MCP through Docker DNS at `graphiti:8000`. Keep MCP SDK
+  DNS-rebinding protection enabled and preserve the explicit `graphiti:*` plus loopback host
+  allowlist; do not replace it with disabled protection or an unrestricted wildcard.
 - Do not suppress Quorum audit episodes. Guard invalid relationship extraction while preserving
   episode ingestion and lineage.
 - Fact invalidation in `graphiti_core/prompts/dedupe_edges.py` is conservative: contradictions

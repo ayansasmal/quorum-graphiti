@@ -15,12 +15,12 @@
 **Files:**
 - Modify: `mcp_server/tests/test_quorum_image_contract.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Import the MCP server module and assert its `FastMCP` transport settings keep
 protection enabled, accept `graphiti:8000`, and reject `untrusted.example`.
 
-- [ ] **Step 2: Run the focused test to verify RED**
+- [x] **Step 2: Run the focused test to verify RED**
 
 Run:
 
@@ -38,7 +38,7 @@ hosts.
 **Files:**
 - Modify: `mcp_server/src/graphiti_mcp_server.py`
 
-- [ ] **Step 1: Import the SDK security settings**
+- [x] **Step 1: Import the SDK security settings**
 
 Add:
 
@@ -46,7 +46,7 @@ Add:
 from mcp.server.transport_security import TransportSecuritySettings
 ```
 
-- [ ] **Step 2: Configure the existing `FastMCP` instance**
+- [x] **Step 2: Configure the existing `FastMCP` instance**
 
 Pass explicit settings:
 
@@ -63,7 +63,7 @@ transport_security=TransportSecuritySettings(
 ),
 ```
 
-- [ ] **Step 3: Run the focused test to verify GREEN**
+- [x] **Step 3: Run the focused test to verify GREEN**
 
 Run the Task 1 command. Expected: PASS.
 
@@ -73,26 +73,26 @@ Run the Task 1 command. Expected: PASS.
 - Modify: `README.md`
 - Modify: `AGENTS.md`
 
-- [ ] **Step 1: Document the internal MCP hostname contract**
+- [x] **Step 1: Document the internal MCP hostname contract**
 
 Record that Docker clients use `graphiti:8000`, the explicit allowlist must be
 preserved, and public access remains gated by Quorum Gateway.
 
-- [ ] **Step 2: Open changed markdown through show-md**
+- [x] **Step 2: Open changed markdown through show-md**
 
 Start the viewer idempotently and open each changed markdown file with its
 absolute path.
 
 ### Task 4: Verify and commit
 
-- [ ] **Step 1: Run focused tests**
+- [x] **Step 1: Run focused tests**
 
 ```bash
 UV_CACHE_DIR=/tmp/quorum-graphiti-uv-cache uv run --project mcp_server \
   pytest mcp_server/tests/test_quorum_image_contract.py -q
 ```
 
-- [ ] **Step 2: Run formatting and lint**
+- [x] **Step 2: Run formatting and lint**
 
 ```bash
 UV_CACHE_DIR=/tmp/quorum-graphiti-uv-cache uv run --project mcp_server ruff check \

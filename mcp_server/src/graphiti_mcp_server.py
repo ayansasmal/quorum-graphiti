@@ -20,6 +20,7 @@ from graphiti_core.nodes import EntityNode, EpisodeType, SagaNode
 from graphiti_core.search.search_filters import SearchFilters
 from graphiti_core.utils.maintenance.graph_data_operations import clear_data
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 from pydantic import BaseModel
 from starlette.responses import JSONResponse
 
@@ -171,6 +172,16 @@ server requires a configured database and valid API keys for language-model oper
 mcp = FastMCP(
     'Graphiti Agent Memory',
     instructions=GRAPHITI_MCP_INSTRUCTIONS,
+    transport_security=TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=['graphiti:*', 'localhost:*', '127.0.0.1:*', '[::1]:*'],
+        allowed_origins=[
+            'http://graphiti:*',
+            'http://localhost:*',
+            'http://127.0.0.1:*',
+            'http://[::1]:*',
+        ],
+    ),
 )
 
 # Global services

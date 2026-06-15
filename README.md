@@ -352,6 +352,12 @@ the MCP server's `providers` and `azure` extras and streamable HTTP transport wh
 locally installed core. Quorum audit episodes are provenance and must not be filtered or suppressed
 during ingestion.
 
+Quorum containers call the MCP endpoint through Docker DNS at `http://graphiti:8000/mcp`.
+The server keeps MCP SDK DNS-rebinding protection enabled with an explicit allowlist for the
+`graphiti` service hostname and loopback hosts. Preserve that allowlist when updating FastMCP or
+transport configuration; public Graphiti access must continue to flow through the authenticated
+Quorum Gateway.
+
 Verify the local-core contract before pinning a new tag:
 
 ```bash
